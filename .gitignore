@@ -66,3 +66,7 @@ typings/
 
 # dotenv environment variables file
 .env
+
+# editor settings
+.idea
+.vscode
