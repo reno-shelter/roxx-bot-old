@@ -39,5 +39,5 @@ services:
             credentials_network:
                 ipv4_address: "169.254.170.3"
         environment:
-          AWS_REGION: "us-east-1"
+          AWS_REGION: "ap-northeast-1"
           AWS_CONTAINER_CREDENTIALS_RELATIVE_URI: "/creds"
