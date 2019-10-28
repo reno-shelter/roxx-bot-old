@@ -46,7 +46,7 @@ async function provisionPreviewStack(owner: string, repo: string, prNumber: numb
   await octokit.issues.createComment({
     owner,
     repo,
-    number: prNumber,
+    issue_number: prNumber,
     body: "Ok @" + requester + ", I am provisioning a preview stack"
   });
 
@@ -74,7 +74,7 @@ async function provisionPreviewStack(owner: string, repo: string, prNumber: numb
   await octokit.issues.createComment({
     owner,
     repo,
-    number: prNumber,
+    issue_number: prNumber,
     body: `I started build [${buildId}](${buildUrl}) for the preview stack`
   });
 
@@ -101,7 +101,7 @@ async function provisionPreviewStack(owner: string, repo: string, prNumber: numb
     await octokit.issues.createComment({
       owner,
       repo,
-      number: prNumber,
+      issue_number: prNumber,
       body: `Build [${buildId}](${buildUrl}) failed`
     });
     return;
@@ -110,7 +110,7 @@ async function provisionPreviewStack(owner: string, repo: string, prNumber: numb
   await octokit.issues.createComment({
     owner,
     repo,
-    number: prNumber,
+    issue_number: prNumber,
     body: `Build [${buildId}](${buildUrl}) succeeded. I am now provisioning the preview stack ${uniqueId}`
   });
 
@@ -166,7 +166,7 @@ async function provisionPreviewStack(owner: string, repo: string, prNumber: numb
     await octokit.issues.createComment({
       owner,
       repo,
-      number: prNumber,
+      issue_number: prNumber,
       body: `Preview stack creation [${uniqueId}](${stackUrl}) failed`
     });
   } else {
@@ -178,7 +178,7 @@ async function provisionPreviewStack(owner: string, repo: string, prNumber: numb
     await octokit.issues.createComment({
       owner,
       repo,
-      number: prNumber,
+      issue_number: prNumber,
       body
     });
   }
