@@ -39,8 +39,6 @@ function timeout(sec: number) {
   return new Promise(resolve => setTimeout(resolve, sec*1000));
 }
 
-let lastModifiedHeader: string;
-
 /**
  * Stand up a preview environment, including building and pushing the Docker image
  */
@@ -338,18 +336,9 @@ async function retrieveNotifications() {
     const since = new Date();
     since.setHours(since.getHours() - 1); // last hour
 
-    let client = octokit;
-    if (lastModifiedHeader) {
-      client = new octokitlib({
-        auth: 'token ' + githubToken,
-        headers: {
-          'If-Modified-Since': lastModifiedHeader
-        }
-      });
-    }
     let response;
     try {
-      response = await client.activity.listNotifications({
+      response = await octokit.activity.listNotifications({
         all: false, // unread only
         since: since.toISOString(),
         participating: true, // only get @mentions
@@ -360,7 +349,6 @@ async function retrieveNotifications() {
       return true;
     }
     const notifications = response.data;
-    lastModifiedHeader = response.headers["last-modified"];
 
     console.log("Notifications: " + notifications.length);
     for (const notification of notifications) {
