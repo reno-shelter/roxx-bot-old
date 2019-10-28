@@ -43,7 +43,7 @@ Resources:
     Type: AWS::ECS::Service
     Properties:
       ServiceName: !Ref 'AWS::StackName'
-      Cluster: "default"
+      Cluster: !Ref Cluster
       LaunchType: FARGATE
       DeploymentConfiguration:
         MaximumPercent: 200
@@ -56,6 +56,11 @@ Resources:
             - !Ref TaskSecurityGroup
           Subnets: !Ref Subnets
       TaskDefinition: !Ref 'TaskDefinition'
+
+  Cluster:
+    Type: 'AWS::ECS::Cluster'
+    Properties:
+      ClusterName: roxx-bot
 
   TaskDefinition:
     Type: 'AWS::ECS::TaskDefinition'
