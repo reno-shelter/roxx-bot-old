@@ -382,7 +382,7 @@ async function retrieveNotifications() {
   return true;
 }
 
-retrieveNotifications().then(function(success) {
+retrieveNotifications().then((success) => {
   if (success) {
     // poll every 30 seconds
     console.log("Scheduling jobs");
