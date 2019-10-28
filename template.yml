@@ -14,11 +14,6 @@ Parameters:
     Type: String
     Default: roxx-bot
 
-  WhitelistedUsers:
-    Description: White listed users splitted per commas
-    Type: String
-    Default: clareliguori
-
   Vpc:
     Description: ID of the default VPC (or other VPC with public subnets)
     Type: AWS::EC2::VPC::Id
@@ -86,8 +81,6 @@ Resources:
           Environment:
             - Name: botUser
               Value: !Ref BotUser
-            - Name: whitelistedUsers
-              Value: !Ref WhitelistedUsers
           Secrets:
             - Name: githubToken
               ValueFrom: !Ref GitHubTokenParameter

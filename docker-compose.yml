@@ -5,4 +5,3 @@ services:
     environment:
       botUser: roxx-bot
       githubToken: ${GITHUB_TOKEN}
-      whitelistedUsers: clareliguori

@@ -31,8 +31,6 @@ const botUser = process.env.botUser || 'roxx-bot';
 
 const region = process.env.AWS_REGION;
 
-const whitelistedUsers = process.env.whitelistedUsers ? process.env.whitelistedUsers.split(',') : ['clareliguori'];
-
 const buildProject = process.env.buildProject || 'roxx-bot';
 
 const ecrRepository = process.env.ecrRepository || 'roxx-bot-preview-images';
@@ -310,12 +308,6 @@ async function handleNotification(notification: octokitlib.ActivityListNotificat
       repo,
       comment_id
     });
-
-    const login = commentResponse.data.user.login;
-    if (!whitelistedUsers.includes(login)) {
-      console.log("Ignoring because login is not whitelisted: " + login);
-      return;
-    }
 
     const commentBody = commentResponse.data.body;
     if (!commentBody.includes('@' + botUser)) {
