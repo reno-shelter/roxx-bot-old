@@ -281,7 +281,7 @@ async function handleNotification(notification: octokitlib.ActivityListNotificat
   const pullRequestResponse = await octokit.pulls.get({
     owner,
     repo,
-    number: prNumber
+    pull_number: prNumber
   });
 
   if (pullRequestResponse.data.state == 'closed') {
