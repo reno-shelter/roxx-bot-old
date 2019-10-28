@@ -290,7 +290,7 @@ async function handleNotification(notification: octokitlib.ActivityListNotificat
 
   if (pullRequestResponse.data.state == 'closed') {
     console.log("Cleaning up preview stack");
-    cleanupPreviewStack(owner, repo, prNumber);
+    await cleanupPreviewStack(owner, repo, prNumber);
     return;
   } else {
     // Format: https://api.github.com/repos/<owner>/<repo>/issues/comments/<comment id>
@@ -372,7 +372,7 @@ async function retrieveNotifications() {
 
     console.log("Notifications: " + notifications.length);
     for (const notification of notifications) {
-      handleNotification(notification);
+      await handleNotification(notification);
     }
   } catch(err) {
     console.error(err);
