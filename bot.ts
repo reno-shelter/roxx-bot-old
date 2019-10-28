@@ -27,15 +27,15 @@ const octokit = new octokitlib({
   auth: 'token ' + githubToken
 });
 
-const botUser = process.env.botUser || 'clare-bot';
+const botUser = process.env.botUser || 'roxx-bot';
 
 const region = process.env.AWS_REGION;
 
 const whitelistedUsers = process.env.whitelistedUsers ? process.env.whitelistedUsers.split(',') : ['clareliguori'];
 
-const buildProject = process.env.buildProject || 'clare-bot';
+const buildProject = process.env.buildProject || 'roxx-bot';
 
-const ecrRepository = process.env.ecrRepository || 'clare-bot-preview-images';
+const ecrRepository = process.env.ecrRepository || 'roxx-bot-preview-images';
 
 function timeout(sec: number) {
   return new Promise(resolve => setTimeout(resolve, sec*1000));

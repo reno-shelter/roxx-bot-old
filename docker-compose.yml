@@ -3,6 +3,6 @@ services:
   bot:
     build: .
     environment:
-      botUser: clare-bot
+      botUser: roxx-bot
       githubToken: ${GITHUB_TOKEN}
       whitelistedUsers: clareliguori

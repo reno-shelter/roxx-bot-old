@@ -7,12 +7,12 @@ Parameters:
   GitHubTokenParameter:
     Description: Parameter Store parameter where encrypted GitHub OAuth Token is stored
     Type: AWS::SSM::Parameter::Name
-    Default: clare-bot-github-token
+    Default: roxx-bot-github-token
 
   BotUser:
     Description: Github Bot User Name
     Type: String
-    Default: clare-bot
+    Default: roxx-bot
 
   WhitelistedUsers:
     Description: White listed users splitted per commas
@@ -198,7 +198,7 @@ Resources:
       ServiceRole: !Ref 'PreviewStackBuildRole'
       Source:
         Type: GITHUB
-        Location: "https://github.com/clareliguori/clare-bot.git"
+        Location: "https://github.com/clareliguori/roxx-bot.git"
         Auth:
           Type: OAUTH
     Type: AWS::CodeBuild::Project

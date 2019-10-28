@@ -1,18 +1,18 @@
-## clare-bot
+## roxx-bot
 
-![](https://github.com/clareliguori/clare-bot/raw/master/assets/robot.png)
+![](https://github.com/clareliguori/roxx-bot/raw/master/assets/robot.png)
 
-The clare-bot application polls for GitHub notifications like @clare-bot mentions and performs actions.  For example, whitelisted GitHub users (namely, @clareliguori) can mention @clare-bot with a command "preview this" in a pull request to provision a preview environment.  See [this pull request](https://github.com/clareliguori/trivia-api/pull/3) for an example interaction, and see [this presentation](https://youtu.be/HCCkVz25UU4) for a demo.
+The roxx-bot application polls for GitHub notifications like @roxx-bot mentions and performs actions.  For example, whitelisted GitHub users (namely, @clareliguori) can mention @roxx-bot with a command "preview this" in a pull request to provision a preview environment.  See [this pull request](https://github.com/clareliguori/trivia-api/pull/3) for an example interaction, and see [this presentation](https://youtu.be/HCCkVz25UU4) for a demo.
 
 Built with GitHub APIs, AWS Fargate, AWS CodeBuild, Amazon ECR, and AWS CloudFormation
 
-### How does clare-bot work?
+### How does roxx-bot work?
 
-The clare-bot container constantly polls the [GitHub Notifications APIs](https://developer.github.com/v3/activity/notifications/) for any mentions of the @clare-bot username on GitHub pull requests.  If the mentioner is whitelisted, clare-bot attempts to set up a preview environment in the same AWS account.  The clare-bot provisioning behavior is hard-coded to look for a buildspec.yml file in order to complete a CodeBuild build, and then to look for a template.yml file in the build artifact to use as a CloudFormation template for the preview environment.
+The roxx-bot container constantly polls the [GitHub Notifications APIs](https://developer.github.com/v3/activity/notifications/) for any mentions of the @roxx-bot username on GitHub pull requests.  If the mentioner is whitelisted, roxx-bot attempts to set up a preview environment in the same AWS account.  The roxx-bot provisioning behavior is hard-coded to look for a buildspec.yml file in order to complete a CodeBuild build, and then to look for a template.yml file in the build artifact to use as a CloudFormation template for the preview environment.
 
 ### Set up your own bot
 
-Create a GitHub user for your bot, like @clare-bot.
+Create a GitHub user for your bot, like @roxx-bot.
 
 Update the user's [notification settings](https://github.com/settings/notifications) to select all "Web" notifications instead of "Email", and to "Automatically watch repositories".
 
