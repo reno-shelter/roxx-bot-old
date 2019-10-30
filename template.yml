@@ -4,10 +4,9 @@ Transform: 'AWS::Serverless-2016-10-31'
 Description: GitHub personal bot
 
 Parameters:
-  GitHubTokenParameter:
-    Description: Parameter Store parameter where encrypted GitHub OAuth Token is stored
-    Type: AWS::SSM::Parameter::Name
-    Default: roxx-bot-github-token
+  GitHubToken:
+    Description: GitHub OAuth Token
+    Type: String
 
   BotUser:
     Description: Github Bot User Name
@@ -86,9 +85,8 @@ Resources:
           Environment:
             - Name: botUser
               Value: !Ref BotUser
-          Secrets:
-            - Name: githubToken
-              ValueFrom: !Ref GitHubTokenParameter
+            - Name: gitHubToken
+              Value: !Ref GitHubToken
       Cpu: '256'
       Memory: '512'
       NetworkMode: awsvpc
@@ -174,6 +172,13 @@ Resources:
               ]
           }
 
+  CodeBuildSourceCredential:
+    Type: AWS::CodeBuild::SourceCredential
+    Properties:
+      AuthType: PERSONAL_ACCESS_TOKEN
+      ServerType: GITHUB
+      Token: !Ref GitHubToken
+
   PreviewStackBuildProject:
     DependsOn:
     - PreviewStackBuildPolicy
@@ -196,9 +201,10 @@ Resources:
       ServiceRole: !Ref 'PreviewStackBuildRole'
       Source:
         Type: GITHUB
-        Location: "https://github.com/clareliguori/roxx-bot.git"
+        Location: "https://github.com/reno-shelter/roxx-bot.git"
         Auth:
           Type: OAUTH
+          Resource: !Ref 'CodeBuildSourceCredential'
       Cache:
         Type: LOCAL
         Modes:
