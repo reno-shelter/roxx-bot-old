@@ -1,4 +1,4 @@
-version: "2"
+version: "3.7"
 networks:
     # This special network is configured so that the local metadata
     # service can bind to the specific IP address that ECS uses
@@ -8,7 +8,6 @@ networks:
         ipam:
             config:
                 - subnet: "169.254.170.0/24"
-                  gateway: 169.254.170.1
 services:
     # This container vends credentials to your containers
     ecs-local-endpoints:
