@@ -201,6 +201,10 @@ Resources:
         Location: "https://github.com/clareliguori/roxx-bot.git"
         Auth:
           Type: OAUTH
+      Cache:
+        Type: LOCAL
+        Modes:
+          - LOCAL_DOCKER_LAYER_CACHE
     Type: AWS::CodeBuild::Project
 
   PreviewStackBuildRole:
