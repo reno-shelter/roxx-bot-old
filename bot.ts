@@ -51,7 +51,7 @@ async function provisionPreviewStack(owner: string, repo: string, prNumber: numb
   });
 
   // start a build to build and push the Docker image, plus synthesize the CloudFormation template
-  const uniqueId = `${owner}-${repo}-pr-${prNumber}`;
+  const uniqueId = `${owner}-${repo}-pr-${prNumber}`.replace(/_/, '-');
   const startBuildResponse = await codebuild.startBuild({
     projectName: buildProject,
     sourceVersion: 'pr/' + prNumber,
