@@ -51,7 +51,9 @@ async function provisionPreviewStack(owner: string, repo: string, prNumber: numb
   });
 
   // start a build to build and push the Docker image, plus synthesize the CloudFormation template
+  console.log('INFO: set unique id');
   const uniqueId = `${owner}-${repo}-pr-${prNumber}`.replace(/_/, '-');
+  console.log('INFO: start build');
   const startBuildResponse = await codebuild.startBuild({
     projectName: buildProject,
     sourceVersion: 'pr/' + prNumber,
@@ -68,9 +70,12 @@ async function provisionPreviewStack(owner: string, repo: string, prNumber: numb
       }
     ]
   }).promise();
+  console.log('INFO: set build id');
   const buildId = startBuildResponse.build.id;
+  console.log('INFO: set build url');
   const buildUrl = `https://console.aws.amazon.com/codesuite/codebuild/projects/${buildProject}/build/${buildId}/log?region=${region}`;
 
+  console.log('INFO: send comment about start build');
   await octokit.issues.createComment({
     owner,
     repo,
@@ -80,6 +85,7 @@ async function provisionPreviewStack(owner: string, repo: string, prNumber: numb
 
   // wait for build completion
   for(let i = 0; i < 150; i++) {
+    console.log('INFO: check complete build');
     const response = await codebuild.batchGetBuilds({
       ids: [buildId]
     }).promise();
@@ -91,9 +97,11 @@ async function provisionPreviewStack(owner: string, repo: string, prNumber: numb
     await timeout(5);
   }
 
+  console.log('INFO: set build response');
   const buildResponse = await codebuild.batchGetBuilds({
     ids: [buildId]
   }).promise();
+  console.log('INFO: set build result');
   const buildResult = buildResponse.builds[0];
 
   if (buildResult.buildStatus != 'SUCCEEDED') {
@@ -107,6 +115,7 @@ async function provisionPreviewStack(owner: string, repo: string, prNumber: numb
     return;
   }
 
+  console.log('INFO: send comment about build success');
   await octokit.issues.createComment({
     owner,
     repo,
@@ -115,12 +124,15 @@ async function provisionPreviewStack(owner: string, repo: string, prNumber: numb
   });
 
   // get the template from the build artifact
+  console.log('INFO: set s3 location');
   const s3Location = buildResult.artifacts.location + "/template.yml";
+  console.log('INFO: set s3 url');
   const s3Url = s3Location.replace('arn:aws:s3:::', 'https://s3.amazonaws.com/');
 
   // create or update CloudFormation stack
   let stackExists = true;
   try {
+    console.log('INFO: describe cloud formation stack');
     await cloudformation.describeStacks({
       StackName: uniqueId
     }).promise();
@@ -134,11 +146,13 @@ async function provisionPreviewStack(owner: string, repo: string, prNumber: numb
 
   if (stackExists) {
     try {
+      console.log('INFO: update cloud formation stack');
       await cloudformation.updateStack({
         StackName: uniqueId,
         TemplateURL: s3Url,
         Capabilities: ["CAPABILITY_IAM"]
       }).promise();
+      console.log('INFO: wait for cloud formation stack');
       await cloudformation.waitFor("stackUpdateComplete", { StackName: uniqueId }).promise();
     } catch(err) {
       if (!err.message.endsWith('No updates are to be performed.')) {
@@ -146,19 +160,25 @@ async function provisionPreviewStack(owner: string, repo: string, prNumber: numb
       }
     }
   } else {
+    console.log('INFO: create cloud formation stack');
     await cloudformation.createStack({
       StackName: uniqueId,
       TemplateURL: s3Url,
       Capabilities: ["CAPABILITY_IAM"]
     }).promise();
+    console.log('INFO: wait for cloud formation stack');
     await cloudformation.waitFor("stackCreateComplete", { StackName: uniqueId }).promise();
   }
 
+  console.log('INFO: describe cloud formation stack');
   const stackResponse = await cloudformation.describeStacks({
     StackName: uniqueId
   }).promise();
+  console.log('INFO: set cloud formation stack status');
   const stackStatus = stackResponse.Stacks[0].StackStatus;
+  console.log('INFO: set cloud formation stack arn');
   const stackArn = stackResponse.Stacks[0].StackId;
+  console.log('INFO: set cloud formation stack url');
   const stackUrl = `https://console.aws.amazon.com/cloudformation/home?region=${region}#/stacks/${encodeURIComponent(stackArn)}/overview`;
 
   if (stackStatus != "CREATE_COMPLETE" && stackStatus != "UPDATE_COMPLETE") {
@@ -170,11 +190,15 @@ async function provisionPreviewStack(owner: string, repo: string, prNumber: numb
       body: `Preview stack creation [${uniqueId}](${stackUrl}) failed`
     });
   } else {
+    console.log('INFO: set comment body');
     let body = `@${requester} preview stack creation [${uniqueId}](${stackUrl}) succeeded!`;
     for (const output of stackResponse.Stacks[0].Outputs) {
+      console.log('INFO: set comment value');
       const value = output.OutputValue.endsWith('elb.amazonaws.com') ? `http://${output.OutputValue}` : output.OutputValue;
+      console.log('INFO: apply comment value to comment body');
       body += `\n\n${output.OutputKey}: ${value}`;
     }
+    console.log('INFO: send comment about preview stack create succeeded');
     await octokit.issues.createComment({
       owner,
       repo,
@@ -284,6 +308,8 @@ async function handleNotification(notification: octokitlib.ActivityListNotificat
     pull_number: prNumber
   });
 
+  console.log('pullRequestResponse: ');
+  console.log(pullRequestResponse);
   if (pullRequestResponse.data.state == 'closed') {
     console.log("Cleaning up preview stack");
     await cleanupPreviewStack(owner, repo, prNumber);
@@ -307,6 +333,8 @@ async function handleNotification(notification: octokitlib.ActivityListNotificat
       comment_id
     });
 
+    console.log('commentResponse');
+    console.log(commentResponse);
     const commentBody = commentResponse.data.body;
     if (!commentBody.includes('@' + botUser)) {
       console.log("Ignoring because comment body does not mention the comment body: " + commentBody);
@@ -329,7 +357,7 @@ async function handleNotification(notification: octokitlib.ActivityListNotificat
  * Retrieve notifications from GitHub and filter to those handled by this bot
  */
 async function retrieveNotifications() {
-  console.log("Retrieving notifications: " + (new Date()).toISOString());
+  // console.log("Retrieving notifications: " + (new Date()).toISOString());
 
   try {
     // Retrieve latest unread notifications
@@ -345,13 +373,19 @@ async function retrieveNotifications() {
       });
     } catch(err) {
       // TODO Assume this is a 304 Not Modified for now, check explicitly later
+      console.log('Errors: ');
+      console.log(err);
       console.log("No new notifications");
       return true;
     }
+    // console.log('Response: ');
+    // console.log(response);
     const notifications = response.data;
 
-    console.log("Notifications: " + notifications.length);
+    // console.log("Notifications: " + notifications.length);
     for (const notification of notifications) {
+        // console.log('Notifications:');
+        // console.log(notification);
       await handleNotification(notification);
     }
   } catch(err) {
