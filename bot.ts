@@ -17,6 +17,7 @@
 const CronJob = require('cron').CronJob;
 import AWS = require('aws-sdk');
 import octokitlib = require('@octokit/rest');
+import {EnvironmentVariable} from "aws-sdk/clients/codebuild";
 
 const codebuild = new AWS.CodeBuild();
 const cloudformation = new AWS.CloudFormation();
@@ -35,6 +36,9 @@ const buildProject = process.env.buildProject || 'roxx-bot';
 
 const ecrRepository = process.env.ecrRepository || 'roxx-bot-preview-images';
 
+const triggerCommand = 'preview this';
+const envPrefix = 'PREVIEWENV_';
+
 function timeout(sec: number) {
   return new Promise(resolve => setTimeout(resolve, sec*1000));
 }
@@ -42,7 +46,7 @@ function timeout(sec: number) {
 /**
  * Stand up a preview environment, including building and pushing the Docker image
  */
-async function provisionPreviewStack(owner: string, repo: string, prNumber: number, requester: string) {
+async function provisionPreviewStack(owner: string, repo: string, prNumber: number, requester: string, envs: EnvironmentVariable[]) {
   await octokit.issues.createComment({
     owner,
     repo,
@@ -60,6 +64,7 @@ async function provisionPreviewStack(owner: string, repo: string, prNumber: numb
     sourceLocationOverride: `https://github.com/${owner}/${repo}`,
     buildspecOverride: 'buildspec.yml',
     environmentVariablesOverride: [
+      ...envs,
       {
         name: "IMAGE_REPO_NAME",
         value: ecrRepository
@@ -343,14 +348,36 @@ async function handleNotification(notification: octokitlib.ActivityListNotificat
 
     const requester = commentResponse.data.user.login;
     const command = commentBody.replace('@' + botUser, '').trim();
-    if (command == 'preview this') {
+    if (command.includes(triggerCommand)) {
       console.log("Provisioning preview stack");
-      await provisionPreviewStack(owner, repo, prNumber, requester);
+      const envs = parseEnv(command);
+      await provisionPreviewStack(owner, repo, prNumber, requester, envs);
     } else {
       console.log("Ignoring because command is not understood: " + command);
       return;
     }
   }
+}
+
+function parseEnv(command: string): EnvironmentVariable[] {
+  return command
+      .replace(triggerCommand, '').trim()
+      .replace(/ +/, ' ') //空白を除去
+      .split(' ')
+      .reduce((previousValue: EnvironmentVariable[], envString: string) => {
+        const [name, value] = envString.split('=');
+        if (!name || !value) return previousValue;
+        previousValue.push({
+          name,
+          value
+        });
+        return previousValue;
+      }, [])
+      // 識別可能な用にENVにプレフィックスをつける
+      .map(envs => envs && ({
+        name: envPrefix + envs.name,
+        value: envs.value
+      }))
 }
 
 /**
