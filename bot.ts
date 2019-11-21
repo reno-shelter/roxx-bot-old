@@ -37,31 +37,84 @@ const buildProject = process.env.buildProject || 'roxx-bot';
 const ecrRepository = process.env.ecrRepository || 'roxx-bot-preview-images';
 
 const triggerCommand = 'preview this';
+
+interface repoConfig {
+  [key: string]: {
+    owner: string
+    repo: string
+    baseBranch: string
+  }
+}
+
+const otherRepoConfig: repoConfig = {
+  api: {
+    owner: "reno-shelter",
+    repo: "backcheck_api",
+    baseBranch: "epic/BCP-124/preview_env"
+  },
+  front: {
+    owner: "reno-shelter",
+    repo: "backcheck_front",
+    baseBranch: "epic/BCP-124/preview_env"
+  },
+  admin: {
+      owner: "reno-shelter",
+      repo: "backcheck_admin",
+      baseBranch: "dev"
+    },
+};
+
 const envPrefix = 'PREVIEWENV_';
 
 function timeout(sec: number) {
   return new Promise(resolve => setTimeout(resolve, sec*1000));
 }
 
+interface previewStackParam {
+  owner: string,
+  repo: string,
+  prNumber: number,
+  requester?: string,
+  envs?: EnvironmentVariable[],
+  targetOwner?: string,
+  targetRepo?: string,
+  targetBranch?: string,
+}
+
+
+function buildUniqueId(owner: string, repo: string, prNumber: number, targetRepo?: string) {
+  let uniqueId = `${owner}-${repo}-pr-${prNumber}`.replace(/_/, '-');
+  if (!!targetRepo) {
+    uniqueId += `-${targetRepo}`.replace(/_/, '-');
+  }
+  return uniqueId;
+}
+
 /**
  * Stand up a preview environment, including building and pushing the Docker image
  */
-async function provisionPreviewStack(owner: string, repo: string, prNumber: number, requester: string, envs: EnvironmentVariable[]) {
+async function provisionPreviewStack(params: previewStackParam) {
+  const {envs,owner,prNumber,repo,requester,targetBranch,targetOwner,targetRepo} = params;
+  const isOther: boolean = !!(targetBranch && targetOwner && targetRepo);
   await octokit.issues.createComment({
     owner,
     repo,
     issue_number: prNumber,
-    body: "Ok @" + requester + ", I am provisioning a preview stack"
+    body: `Ok @${requester}, I am provisioning a preview stack to ${targetRepo}`
   });
 
   // start a build to build and push the Docker image, plus synthesize the CloudFormation template
   console.log('INFO: set unique id');
-  const uniqueId = `${owner}-${repo}-pr-${prNumber}`.replace(/_/, '-');
+
+  const uniqueId = buildUniqueId(owner, repo, prNumber, targetRepo);
+  const sourceVersion = targetBranch? targetBranch : 'pr/' + prNumber;
+  const sourceLocationOverride = isOther ? `https://github.com/${targetOwner}/${targetRepo}` : `https://github.com/${owner}/${repo}`;
+
   console.log('INFO: start build');
   const startBuildResponse = await codebuild.startBuild({
     projectName: buildProject,
-    sourceVersion: 'pr/' + prNumber,
-    sourceLocationOverride: `https://github.com/${owner}/${repo}`,
+    sourceVersion,
+    sourceLocationOverride,
     buildspecOverride: 'buildspec.yml',
     environmentVariablesOverride: [
       ...envs,
@@ -216,9 +269,10 @@ async function provisionPreviewStack(owner: string, repo: string, prNumber: numb
 /**
  * Tear down when the pull request is closed
  */
-async function cleanupPreviewStack(owner: string, repo: string, prNumber: number) {
+async function cleanupPreviewStack(param: previewStackParam) {
+  const {owner, repo, prNumber, targetRepo} = param;
   // Delete the stack
-  const uniqueId = `${owner}-${repo}-pr-${prNumber}`;
+  const uniqueId = buildUniqueId(owner, repo, prNumber, targetRepo);
   let stackExists = true;
   try {
     await cloudformation.describeStacks({
@@ -317,7 +371,14 @@ async function handleNotification(notification: octokitlib.ActivityListNotificat
   console.log(pullRequestResponse);
   if (pullRequestResponse.data.state == 'closed') {
     console.log("Cleaning up preview stack");
-    await cleanupPreviewStack(owner, repo, prNumber);
+    await Promise.all(
+        Object.keys(otherRepoConfig).map(target => {
+          if(otherRepoConfig[target].repo === repo){
+            return cleanupPreviewStack({owner, repo, prNumber})
+          }
+          return cleanupPreviewStack({owner, repo,prNumber,targetRepo: otherRepoConfig[target].repo})
+        })
+    );
     return;
   } else {
     // Format: https://api.github.com/repos/<owner>/<repo>/issues/comments/<comment id>
@@ -350,8 +411,26 @@ async function handleNotification(notification: octokitlib.ActivityListNotificat
     const command = commentBody.replace('@' + botUser, '').trim();
     if (command.includes(triggerCommand)) {
       console.log("Provisioning preview stack");
-      const envs = parseEnv(command);
-      await provisionPreviewStack(owner, repo, prNumber, requester, envs);
+      const envs = parseEnv(command, triggerCommand);
+      await provisionPreviewStack({owner, repo, prNumber, requester, envs});
+    } else if(command.startsWith("preview")) { // それ以外の環境
+      const target = command.replace(/preview (front|api).*/, "$1");
+      const envs = parseEnv(command, `preview ${target}`);
+      if (otherRepoConfig[target] == undefined) {
+        console.log(`command cannot deploy [${target}]`);
+        return;
+      }
+      const targetConfig = otherRepoConfig[target];
+      await provisionPreviewStack({
+        owner,
+        repo,
+        prNumber,
+        requester,
+        envs,
+        targetRepo: targetConfig.repo,
+        targetBranch: targetConfig.baseBranch,
+        targetOwner: targetConfig.owner,
+      });
     } else {
       console.log("Ignoring because command is not understood: " + command);
       return;
@@ -359,9 +438,9 @@ async function handleNotification(notification: octokitlib.ActivityListNotificat
   }
 }
 
-function parseEnv(command: string): EnvironmentVariable[] {
+function parseEnv(command: string, trigger: string): EnvironmentVariable[] {
   return command
-      .replace(triggerCommand, '').trim()
+      .replace(trigger, '').trim()
       .replace(/ +/, ' ') //空白を除去
       .split(' ')
       .reduce((previousValue: EnvironmentVariable[], envString: string) => {
