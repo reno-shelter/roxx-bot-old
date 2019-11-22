@@ -116,6 +116,12 @@ async function provisionPreviewStack(params: previewStackParam) {
     sourceVersion,
     sourceLocationOverride,
     buildspecOverride: 'buildspec.yml',
+    cacheOverride: {
+      type: "LOCAL",
+      modes: [
+        "LOCAL_DOCKER_LAYER_CACHE"
+      ]
+    },
     environmentVariablesOverride: [
       ...envs,
       {
