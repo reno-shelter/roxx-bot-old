@@ -63,6 +63,12 @@ async function provisionPreviewStack(owner: string, repo: string, prNumber: numb
     sourceVersion: 'pr/' + prNumber,
     sourceLocationOverride: `https://github.com/${owner}/${repo}`,
     buildspecOverride: 'buildspec.yml',
+    cacheOverride: {
+      type: "LOCAL",
+      modes: [
+        "LOCAL_DOCKER_LAYER_CACHE"
+      ]
+    },
     environmentVariablesOverride: [
       ...envs,
       {
@@ -218,7 +224,7 @@ async function provisionPreviewStack(owner: string, repo: string, prNumber: numb
  */
 async function cleanupPreviewStack(owner: string, repo: string, prNumber: number) {
   // Delete the stack
-  const uniqueId = `${owner}-${repo}-pr-${prNumber}`;
+  const uniqueId = `${owner}-${repo}-pr-${prNumber}`.replace(/_/, '-');
   let stackExists = true;
   try {
     await cloudformation.describeStacks({
