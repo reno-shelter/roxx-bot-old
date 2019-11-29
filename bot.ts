@@ -21,6 +21,7 @@ import {EnvironmentVariable} from "aws-sdk/clients/codebuild";
 
 const codebuild = new AWS.CodeBuild();
 const cloudformation = new AWS.CloudFormation();
+const ssm = new AWS.SSM();
 
 const githubToken = process.env.githubToken;
 
@@ -31,6 +32,10 @@ const octokit = new octokitlib({
 const botUser = process.env.botUser || 'roxx-bot';
 
 const region = process.env.AWS_REGION;
+
+// ssm
+const activationPeriod = parseInt(process.env.activationPeriod) || 10; // days
+const activationRole = process.env.activationRole || 'ssm-activation-role';
 
 const buildProject = process.env.buildProject || 'roxx-bot';
 
@@ -79,6 +84,7 @@ interface previewStackParam {
   targetOwner?: string,
   targetRepo?: string,
   targetBranch?: string,
+  shouldActivation: boolean
 }
 
 
@@ -90,11 +96,72 @@ function buildUniqueId(owner: string, repo: string, prNumber: number, targetRepo
   return uniqueId;
 }
 
+function generateActivationParamName(uniqueId: string) {
+  return "preview-env-activation-code-" + uniqueId;
+}
+
+async function attachActivationEnv(uniqueId: string, envs: EnvironmentVariable[]) {
+  const activationExpiredAt = new Date();
+  activationExpiredAt.setDate(activationExpiredAt.getDate() + activationPeriod);
+
+  const activationResponse = await ssm.describeActivations({
+    Filters:[
+      {
+        FilterKey: "DefaultInstanceName",
+        FilterValues: [uniqueId]
+      }
+    ]
+  }).promise();
+  if(activationResponse.ActivationList.length === 0){
+    const activation = await ssm.createActivation({
+      DefaultInstanceName: uniqueId,
+      Description: "activation for preview env",
+      ExpirationDate: activationExpiredAt,
+      IamRole: activationRole,
+      RegistrationLimit: 5
+    }).promise();
+    await ssm.putParameter({
+      Name: generateActivationParamName(uniqueId),
+      Value: activation.ActivationCode,
+      Type: "SecureString"
+    }).promise();
+    envs = envs.concat([
+      {
+        name: "SSM_ACTIVATION_CODE",
+        value: activation.ActivationCode
+      },
+      {
+        name: "SSM_ACTIVATION_ID",
+        value: activation.ActivationId
+      },
+    ]);
+    return envs;
+  } else {
+    const activationCodeResponse = await ssm.getParameter({
+      Name: generateActivationParamName(uniqueId),
+      WithDecryption: true
+
+    }).promise();
+    envs = envs.concat([
+      {
+        name: "SSM_ACTIVATION_CODE",
+        value: activationCodeResponse.Parameter.Value
+      },
+      {
+        name: "SSM_ACTIVATION_ID",
+        value: activationResponse.ActivationList[0].ActivationId
+      },
+    ])
+    return envs;
+  }
+}
+
 /**
  * Stand up a preview environment, including building and pushing the Docker image
  */
 async function provisionPreviewStack(params: previewStackParam) {
-  const {envs,owner,prNumber,repo,requester,targetBranch,targetOwner,targetRepo} = params;
+  const {owner,prNumber,repo,requester,targetBranch,targetOwner,targetRepo, shouldActivation} = params;
+  let {envs} = params;
   const isOther: boolean = !!(targetBranch && targetOwner && targetRepo);
   await octokit.issues.createComment({
     owner,
@@ -110,6 +177,12 @@ async function provisionPreviewStack(params: previewStackParam) {
   const sourceVersion = targetBranch? targetBranch : 'pr/' + prNumber;
   const sourceLocationOverride = isOther ? `https://github.com/${targetOwner}/${targetRepo}` : `https://github.com/${owner}/${repo}`;
 
+
+  if (shouldActivation) {
+    console.log('INFO: create activation');
+    envs = await attachActivationEnv(uniqueId, envs);
+  }
+
   console.log('INFO: start build');
   const startBuildResponse = await codebuild.startBuild({
     projectName: buildProject,
@@ -124,6 +197,10 @@ async function provisionPreviewStack(params: previewStackParam) {
     },
     environmentVariablesOverride: [
       ...envs,
+      {
+        name: "UNIQUE_ID",
+        value: uniqueId
+      },
       {
         name: "IMAGE_REPO_NAME",
         value: ecrRepository
@@ -276,7 +353,7 @@ async function provisionPreviewStack(params: previewStackParam) {
  * Tear down when the pull request is closed
  */
 async function cleanupPreviewStack(param: previewStackParam) {
-  const {owner, repo, prNumber, targetRepo} = param;
+  const {owner, repo, prNumber, targetRepo, shouldActivation} = param;
   // Delete the stack
   const uniqueId = buildUniqueId(owner, repo, prNumber, targetRepo);
   let stackExists = true;
@@ -315,6 +392,24 @@ async function cleanupPreviewStack(param: previewStackParam) {
     }).promise();
     console.log("Stack status: " + stackResponse.Stacks[0].StackStatus);
     stackExists = stackResponse.Stacks[0].StackStatus != 'DELETE_COMPLETE';
+    if(shouldActivation){
+      const activationResponse = await ssm.describeActivations({
+        Filters: [
+          {
+            FilterKey: "DefaultInstanceName",
+            FilterValues: [uniqueId]
+          }
+        ]
+      }).promise();
+      await Promise.all(activationResponse.ActivationList.map(activation => {
+        return ssm.deleteActivation({
+          ActivationId: activation.ActivationId
+        }).promise()
+      }));
+      await ssm.deleteParameter({
+        Name: generateActivationParamName(uniqueId)
+      })
+    }
   } catch(err) {
     if (err.message.endsWith('does not exist')) {
       stackExists = false;
@@ -339,6 +434,10 @@ async function cleanupPreviewStack(param: previewStackParam) {
       body: `The preview stack ${uniqueId} failed to clean up`
     });
   }
+}
+
+function getShouldActivation(repo: string) {
+  return repo === 'backcheck_api';
 }
 
 /**
@@ -373,6 +472,8 @@ async function handleNotification(notification: octokitlib.ActivityListNotificat
     pull_number: prNumber
   });
 
+  const shouldActivation = getShouldActivation(repo);
+
   console.log('pullRequestResponse: ');
   console.log(pullRequestResponse);
   if (pullRequestResponse.data.state == 'closed') {
@@ -380,9 +481,9 @@ async function handleNotification(notification: octokitlib.ActivityListNotificat
     await Promise.all(
         Object.keys(otherRepoConfig).map(target => {
           if(otherRepoConfig[target].repo === repo){
-            return cleanupPreviewStack({owner, repo, prNumber})
+            return cleanupPreviewStack({owner, repo, prNumber, shouldActivation})
           }
-          return cleanupPreviewStack({owner, repo,prNumber,targetRepo: otherRepoConfig[target].repo})
+          return cleanupPreviewStack({owner, repo,prNumber,targetRepo: otherRepoConfig[target].repo, shouldActivation})
         })
     );
     return;
@@ -418,7 +519,7 @@ async function handleNotification(notification: octokitlib.ActivityListNotificat
     if (command.includes(triggerCommand)) {
       console.log("Provisioning preview stack");
       const envs = parseEnv(command, triggerCommand);
-      await provisionPreviewStack({owner, repo, prNumber, requester, envs});
+      await provisionPreviewStack({owner, repo, prNumber, requester, envs, shouldActivation});
     } else if(command.startsWith("preview")) { // それ以外の環境
       const target = command.replace(/preview (front|api).*/, "$1");
       const envs = parseEnv(command, `preview ${target}`);
@@ -436,6 +537,7 @@ async function handleNotification(notification: octokitlib.ActivityListNotificat
         targetRepo: targetConfig.repo,
         targetBranch: targetConfig.baseBranch,
         targetOwner: targetConfig.owner,
+        shouldActivation,
       });
     } else {
       console.log("Ignoring because command is not understood: " + command);
