@@ -177,6 +177,25 @@ async function provisionPreviewStack(params: previewStackParam) {
   const sourceVersion = targetBranch? targetBranch : 'pr/' + prNumber;
   const sourceLocationOverride = isOther ? `https://github.com/${targetOwner}/${targetRepo}` : `https://github.com/${owner}/${repo}`;
 
+  if ((targetRepo || repo) === 'backcheck_api') {
+    envs.push(
+      ...[
+        {
+          name: 'AUTH0_STAFF_LOGIN_CLIENT_ID',
+          value: process.env.AUTH0_STAFF_LOGIN_CLIENT_ID,
+        },
+        {
+          name: 'AUTH0_STAFF_MANAGEMENT_CLIENT_ID',
+          value: process.env.AUTH0_STAFF_MANAGEMENT_CLIENT_ID,
+        },
+        {
+          name: 'AUTH0_STAFF_MANAGEMENT_CLIENT_SECRET',
+          value: process.env.AUTH0_STAFF_MANAGEMENT_CLIENT_SECRET,
+        },
+      ].map(env=>({...env, name: envPrefix + env.name}))
+    )
+    console.log('env:', envs)
+  }
 
   if (shouldActivation) {
     console.log('INFO: create activation');
