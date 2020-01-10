@@ -2,6 +2,7 @@ version: "3.7"
 services:
   bot:
     build: .
+    env_file:
+      - .env
     environment:
       botUser: roxx-bot
-      githubToken: ${GITHUB_TOKEN}

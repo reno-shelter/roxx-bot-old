@@ -185,7 +185,7 @@ async function attachActivationEnv(
  * @param repoName
  */
 function shouldAddCorsAuth0(repoName: string) {
-  return ["backcheck-front"].includes(repoName);
+  return ["backcheck_front"].includes(repoName);
 }
 
 /**
@@ -242,6 +242,11 @@ async function provisionPreviewStack(params: previewStackParam) {
       },
       environmentVariablesOverride: [
         ...envs,
+          // TODO these env remove from here
+        {name: "PREVIEWENV_AUTH0_CLIENT_ID",value:process.env.PREVIEWENV_AUTH0_CLIENT_ID},
+        {name: "PREVIEWENV_AUTH0_STAFF_LOGIN_CLIENT_ID",value:process.env.PREVIEWENV_AUTH0_STAFF_LOGIN_CLIENT_ID},
+        {name: "PREVIEWENV_AUTH0_STAFF_MANAGEMENT_CLIENT_ID",value:process.env.PREVIEWENV_AUTH0_STAFF_MANAGEMENT_CLIENT_ID},
+        {name: "PREVIEWENV_AUTH0_STAFF_MANAGEMENT_CLIENT_SECRET",value:process.env.PREVIEWENV_AUTH0_STAFF_MANAGEMENT_CLIENT_SECRET},
         {
           name: "UNIQUE_ID",
           value: uniqueId

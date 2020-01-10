@@ -1,7 +1,9 @@
 import {Client, ManagementClient} from "auth0";
 
-const unifyArray = (arr: string[]) => {
-    return [...new Set(arr)];
+const addKeyFromArray = (arr: string[], key: string) => {
+    const set = new Set(arr);
+    set.add(key);
+    return [...set];
 };
 const removeKeyFromArray = (arr: string[], key: string) => {
     const set = new Set(arr);
@@ -28,12 +30,10 @@ export class Auth0Manager {
         const client = await this.auth0.getClient({client_id: this.targetClientId});
 
         const updateClient: Client = {
-            allowed_logout_urls: unifyArray(
-                [...client.allowed_logout_urls, `${baseURL}/company/signin`]),
-            callbacks: unifyArray(
-                [...client.callbacks, `${baseURL}/company/dashboard`]),
-            web_origins: unifyArray([...client.web_origins, baseURL]),
-            allowed_origins: unifyArray([...client.allowed_origins, baseURL])
+            allowed_logout_urls: addKeyFromArray(client.allowed_logout_urls, `${baseURL}/company/signin`),
+            callbacks: addKeyFromArray(client.callbacks, `${baseURL}/company/dashboard`),
+            web_origins: addKeyFromArray(client.web_origins, baseURL),
+            allowed_origins: addKeyFromArray(client.allowed_origins, baseURL)
         };
         await this.auth0.updateClient({client_id: this.targetClientId}, updateClient)
     }
