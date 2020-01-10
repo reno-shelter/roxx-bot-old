@@ -8,6 +8,22 @@ Parameters:
     Description: GitHub OAuth Token
     Type: String
 
+  Auth0Domain:
+    Type: String
+  Auth0ClientId:
+    Type: String
+  Auth0ClientSecret:
+    Type: String
+  Auth0TargetClientId:
+    Type: String
+  PreviewenvAuth0ClientId:
+    Type: String
+  PreviewenvAuth0StaffLoginClientId:
+    Type: String
+  PreviewenvAuth0StaffManagementClientId:
+    Type: String
+  PreviewenvAuth0StaffManagementClientSecret:
+    Type: String
   BotUser:
     Description: Github Bot User Name
     Type: String
@@ -85,8 +101,24 @@ Resources:
           Environment:
             - Name: botUser
               Value: !Ref BotUser
-            - Name: gitHubToken
+            - Name: githubToken
               Value: !Ref GitHubToken
+            - Name: AUTH0_DOMAIN
+              Value: !Ref Auth0Domain
+            - Name: AUTH0_CLIENT_ID
+              Value: !Ref Auth0ClientId
+            - Name: AUTH0_CLIENT_SECRET
+              Value: !Ref Auth0ClientSecret
+            - Name: AUTH0_TARGET_CLIENT_ID
+              Value: !Ref Auth0TargetClientId
+            - Name: PREVIEWENV_AUTH0_CLIENT_ID
+              Value: !Ref PreviewenvAuth0ClientId
+            - Name: PREVIEWENV_AUTH0_STAFF_LOGIN_CLIENT_ID
+              Value: !Ref PreviewenvAuth0StaffLoginClientId
+            - Name: PREVIEWENV_AUTH0_STAFF_MANAGEMENT_CLIENT_ID
+              Value: !Ref PreviewenvAuth0StaffManagementClientId
+            - Name: PREVIEWENV_AUTH0_STAFF_MANAGEMENT_CLIENT_SECRET
+              Value: !Ref PreviewenvAuth0StaffManagementClientSecret
       Cpu: '256'
       Memory: '512'
       NetworkMode: awsvpc
