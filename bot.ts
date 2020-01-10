@@ -225,6 +225,28 @@ async function provisionPreviewStack(params: previewStackParam) {
     envs = await attachActivationEnv(uniqueId, envs);
   }
 
+  if ((targetRepo || repo) === 'backcheck_api') {
+    envs.push(
+      ...[
+        {
+          name: "PREVIEWENV_AUTH0_CLIENT_ID",
+          value: process.env.PREVIEWENV_AUTH0_CLIENT_ID
+        },
+        {
+          name: "PREVIEWENV_AUTH0_STAFF_LOGIN_CLIENT_ID",
+          value: process.env.PREVIEWENV_AUTH0_STAFF_LOGIN_CLIENT_ID
+        },
+        {
+          name: "PREVIEWENV_AUTH0_STAFF_MANAGEMENT_CLIENT_ID",
+          value: process.env.PREVIEWENV_AUTH0_STAFF_MANAGEMENT_CLIENT_ID
+        },
+        {
+          name: "PREVIEWENV_AUTH0_STAFF_MANAGEMENT_CLIENT_SECRET",
+          value: process.env.PREVIEWENV_AUTH0_STAFF_MANAGEMENT_CLIENT_SECRET
+        },
+      ].map(env => ({...env, name: envPrefix + env.name}))
+    )
+  }
   if (shouldAddCorsAuth0(isOther ? targetRepo : repo)) {
     await auth0Manager.add(uniqueId);
   }
@@ -242,11 +264,6 @@ async function provisionPreviewStack(params: previewStackParam) {
       },
       environmentVariablesOverride: [
         ...envs,
-          // TODO these env remove from here
-        {name: "PREVIEWENV_AUTH0_CLIENT_ID",value:process.env.PREVIEWENV_AUTH0_CLIENT_ID},
-        {name: "PREVIEWENV_AUTH0_STAFF_LOGIN_CLIENT_ID",value:process.env.PREVIEWENV_AUTH0_STAFF_LOGIN_CLIENT_ID},
-        {name: "PREVIEWENV_AUTH0_STAFF_MANAGEMENT_CLIENT_ID",value:process.env.PREVIEWENV_AUTH0_STAFF_MANAGEMENT_CLIENT_ID},
-        {name: "PREVIEWENV_AUTH0_STAFF_MANAGEMENT_CLIENT_SECRET",value:process.env.PREVIEWENV_AUTH0_STAFF_MANAGEMENT_CLIENT_SECRET},
         {
           name: "UNIQUE_ID",
           value: uniqueId
