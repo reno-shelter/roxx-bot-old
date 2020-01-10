@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { Auth0Manager } from "./auth0";
+import {Auth0Manager} from "./auth0";
 
 /**
  * Retrieves @mention notifications of the bot user from GitHub,
@@ -19,7 +19,7 @@ import { Auth0Manager } from "./auth0";
 const CronJob = require("cron").CronJob;
 import AWS = require("aws-sdk");
 import octokitlib = require("@octokit/rest");
-import { EnvironmentVariable } from "aws-sdk/clients/codebuild";
+import {EnvironmentVariable} from "aws-sdk/clients/codebuild";
 
 const codebuild = new AWS.CodeBuild();
 const cloudformation = new AWS.CloudFormation();
@@ -202,7 +202,7 @@ async function provisionPreviewStack(params: previewStackParam) {
     targetRepo,
     shouldActivation
   } = params;
-  let { envs } = params;
+  let {envs} = params;
   const isOther: boolean = !!(targetBranch && targetOwner && targetRepo);
   await octokit.issues.createComment({
     owner,
@@ -244,8 +244,8 @@ async function provisionPreviewStack(params: previewStackParam) {
           name: "PREVIEWENV_AUTH0_STAFF_MANAGEMENT_CLIENT_SECRET",
           value: process.env.PREVIEWENV_AUTH0_STAFF_MANAGEMENT_CLIENT_SECRET
         },
-      ].map(env => ({...env, name: envPrefix + env.name}))
-    )
+      ]
+    );
   }
   if (shouldAddCorsAuth0(isOther ? targetRepo : repo)) {
     await auth0Manager.add(uniqueId);
@@ -374,7 +374,7 @@ async function provisionPreviewStack(params: previewStackParam) {
         .promise();
       console.log("INFO: wait for cloud formation stack");
       await cloudformation
-        .waitFor("stackUpdateComplete", { StackName: uniqueId })
+        .waitFor("stackUpdateComplete", {StackName: uniqueId})
         .promise();
     } catch (err) {
       if (!err.message.endsWith("No updates are to be performed.")) {
@@ -392,7 +392,7 @@ async function provisionPreviewStack(params: previewStackParam) {
       .promise();
     console.log("INFO: wait for cloud formation stack");
     await cloudformation
-      .waitFor("stackCreateComplete", { StackName: uniqueId })
+      .waitFor("stackCreateComplete", {StackName: uniqueId})
       .promise();
   }
 
@@ -444,7 +444,7 @@ async function provisionPreviewStack(params: previewStackParam) {
  * Tear down when the pull request is closed
  */
 async function cleanupPreviewStack(param: previewStackParam) {
-  const { owner, repo, prNumber, targetRepo, shouldActivation } = param;
+  const {owner, repo, prNumber, targetRepo, shouldActivation} = param;
   const isOther: boolean = !!targetRepo;
   // Delete the stack
   const uniqueId = buildUniqueId(owner, repo, prNumber, targetRepo);
@@ -476,9 +476,9 @@ async function cleanupPreviewStack(param: previewStackParam) {
       "Now that this pull request is closed, I will clean up the preview stack"
   });
 
-  await cloudformation.deleteStack({ StackName: uniqueId }).promise();
+  await cloudformation.deleteStack({StackName: uniqueId}).promise();
   await cloudformation
-    .waitFor("stackDeleteComplete", { StackName: uniqueId })
+    .waitFor("stackDeleteComplete", {StackName: uniqueId})
     .promise();
 
   if (shouldAddCorsAuth0(isOther ? targetRepo : repo)) {
@@ -637,7 +637,7 @@ async function handleNotification(
     if (!commentBody.includes("@" + botUser)) {
       console.log(
         "Ignoring because comment body does not mention the comment body: " +
-          commentBody
+        commentBody
       );
       return;
     }
