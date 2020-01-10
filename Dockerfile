@@ -4,7 +4,7 @@ WORKDIR /opt/app
 RUN npm install -g npm@6.4.1
 COPY package.json package-lock.json ./
 RUN npm ci
-COPY bot.ts tsconfig.json ./
+COPY *.ts tsconfig.json ./
 RUN npm run build
 RUN npm prune --production && npm cache clean --force
 
@@ -12,6 +12,6 @@ RUN npm prune --production && npm cache clean --force
 FROM node:10.12.0-alpine AS release
 WORKDIR /opt/app
 COPY --from=dependencies /opt/app/node_modules /opt/app/node_modules/
-COPY --from=dependencies /opt/app/dist/bot.js /opt/app/
+COPY --from=dependencies /opt/app/dist/*.js /opt/app/
 
 CMD [ "node", "bot.js" ]
