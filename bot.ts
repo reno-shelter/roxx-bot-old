@@ -64,12 +64,12 @@ const otherRepoConfig: repoConfig = {
   api: {
     owner: "reno-shelter",
     repo: "backcheck_api",
-    baseBranch: "epic/BCP-124/preview_env"
+    baseBranch: "dev"
   },
   front: {
     owner: "reno-shelter",
     repo: "backcheck_front",
-    baseBranch: "epic/BCP-124/preview_env"
+    baseBranch: "dev"
   },
   admin: {
     owner: "reno-shelter",
