@@ -42,11 +42,11 @@ ROXX-botはbackcheckのプレビュー環境を構築するbotです。
 #### APIとFRONTの複合プレビュー環境
 1. API側のプルリクエストで以下をコメントし、
 
-    `@roxx-bot preview this FRONT_URL=https://reno-shelter-backcheck-api-pr-${ID}.preview.backcheck.jp`
+    `@roxx-bot preview this FRONT_URL=https://reno-shelter-backcheck-front-pr-${FRONT_ID}.preview.backcheck.jp`
 
 1. FRONT側のプルリクエストで以下をコメントする
 
-    `@roxx-bot preview this API_URL=https://reno-shelter-backcheck-front-pr-${ID}.preview.backcheck.jp`
+    `@roxx-bot preview this API_URL=https://reno-shelter-backcheck-api-pr-${API_ID}.preview.backcheck.jp`
 
 ## FAQ
 ### adminは？
