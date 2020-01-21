@@ -36,18 +36,8 @@ SUBNET_IDS=`aws ec2 describe-subnets --region us-west-2 --filters "Name=vpc-id,V
 ```
 
 Provision the stack in CloudFormation with the bot disabled:
-```
-aws cloudformation deploy --region us-west-2 \
-    --stack-name your-bot-name \
-    --template-file template.yml \
-    --capabilities CAPABILITY_NAMED_IAM \
-    --parameter-overrides \
-        Vpc=$VPC_ID \
-        Subnets=$SUBNET_IDS \
-        BotUser=<bot's GitHub username> \
-        WhitelistedUsers=<your GitHub username> \
-        GitHubTokenParameter=your-bot-name-github-token \
-        BotEnabled=No
+```sh
+sh deploy_cloudformation.sh
 ```
 
 Build and push the Docker image:
@@ -66,12 +56,8 @@ docker push $ECR_REPO
 ```
 
 Enable the bot:
-```
-aws cloudformation deploy --region us-west-2 \
-    --stack-name your-bot-name \
-    --template-file template.yml \
-    --capabilities CAPABILITY_NAMED_IAM \
-    --parameter-overrides BotEnabled=Yes
+```sh
+sh enable_bot.sh
 ```
 
 ### Test Locally
