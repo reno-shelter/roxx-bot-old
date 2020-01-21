@@ -1,4 +1,4 @@
-version: "2"
+version: "3.7"
 networks:
     # This special network is configured so that the local metadata
     # service can bind to the specific IP address that ECS uses
@@ -8,7 +8,6 @@ networks:
         ipam:
             config:
                 - subnet: "169.254.170.0/24"
-                  gateway: 169.254.170.1
 services:
     # This container vends credentials to your containers
     ecs-local-endpoints:
@@ -24,7 +23,7 @@ services:
           # define the home folder; credentials will be read from $HOME/.aws
           HOME: "/home"
           # You can change which AWS CLI Profile is used
-          AWS_PROFILE: "default"
+          AWS_PROFILE: ${AWS_PROFILE:-default}
         networks:
             credentials_network:
                 # This special IP address is recognized by the AWS SDKs and AWS CLI
@@ -40,5 +39,5 @@ services:
             credentials_network:
                 ipv4_address: "169.254.170.3"
         environment:
-          AWS_REGION: "us-east-1"
+          AWS_REGION: "ap-northeast-1"
           AWS_CONTAINER_CREDENTIALS_RELATIVE_URI: "/creds"

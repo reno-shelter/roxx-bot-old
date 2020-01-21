@@ -1,8 +1,8 @@
-version: "2"
+version: "3.7"
 services:
   bot:
     build: .
+    env_file:
+      - .env
     environment:
-      botUser: clare-bot
-      githubToken: ${GITHUB_TOKEN}
-      whitelistedUsers: clareliguori
+      botUser: roxx-bot
