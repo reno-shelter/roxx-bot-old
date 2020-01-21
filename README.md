@@ -33,22 +33,20 @@ ROXX-botはbackcheckのプレビュー環境を構築するbotです。
 
 #### APIのみのプレビュー環境
 1. `@roxx-bot preview this FRONT_URL=https://reno-shelter-backcheck-api-pr-${ID}-backcheck-front.preview.backcheck.jp`
-1. `@roxx-bot preview front API_URL=https://reno-shelter-backcheck-api-pr-${ID}-backcheck-front.preview.backcheck.jp`
+1. `@roxx-bot preview front API_URL=https://reno-shelter-backcheck-api-pr-${ID}.preview.backcheck.jp`
 
 #### FRONTのみのプレビュー環境
-1. `@roxx-bot preview this API_URL=https://reno-shelter-backcheck-front-pr-${ID}-backcheck-front.preview.backcheck.jp`
-1. `@roxx-bot preview api FRONT_URL=https://reno-shelter-backcheck-front-pr-${ID}-backcheck-front.preview.backcheck.jp`
+1. `@roxx-bot preview this API_URL=https://reno-shelter-backcheck-front-pr-${ID}-backcheck-api.preview.backcheck.jp`
+1. `@roxx-bot preview api FRONT_URL=https://reno-shelter-backcheck-front-pr-${ID}.preview.backcheck.jp`
 
 #### APIとFRONTの複合プレビュー環境
-API側のプルリクエストでプレビュー環境を作成する場合: 
+1. API側のプルリクエストで以下をコメントし、
 
-1. `@roxx-bot preview this FRONT_URL=https://reno-shelter-backcheck-api-pr-${ID}-backcheck-front.preview.backcheck.jp`
-1. `@roxx-bot preview front API_URL=https://reno-shelter-backcheck-api-pr-${ID}-backcheck-front.preview.backcheck.jp`
+    `@roxx-bot preview this FRONT_URL=https://reno-shelter-backcheck-api-pr-${ID}.preview.backcheck.jp`
 
-FRONT側のプルリクエストでプレビュー環境を作成する場合: 
+1. FRONT側のプルリクエストで以下をコメントする
 
-1. `@roxx-bot preview this API_URL=https://reno-shelter-backcheck-front-pr-${ID}-backcheck-front.preview.backcheck.jp`
-1. `@roxx-bot preview api FRONT_URL=https://reno-shelter-backcheck-front-pr-${ID}-backcheck-front.preview.backcheck.jp`
+    `@roxx-bot preview this API_URL=https://reno-shelter-backcheck-front-pr-${ID}.preview.backcheck.jp`
 
 ## FAQ
 ### adminは？
