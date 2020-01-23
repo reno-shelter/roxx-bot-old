@@ -225,13 +225,18 @@ async function provisionPreviewStack(params: previewStackParam) {
     envs = await attachActivationEnv(uniqueId, envs);
   }
 
+  // inject auth0 environment
+  envs.push(
+    ...[
+      {
+        name: "PREVIEWENV_AUTH0_CLIENT_ID",
+        value: process.env.PREVIEWENV_AUTH0_CLIENT_ID
+      }
+    ]
+  );
   if ((targetRepo || repo) === 'backcheck_api') {
     envs.push(
       ...[
-        {
-          name: "PREVIEWENV_AUTH0_CLIENT_ID",
-          value: process.env.PREVIEWENV_AUTH0_CLIENT_ID
-        },
         {
           name: "PREVIEWENV_AUTH0_STAFF_LOGIN_CLIENT_ID",
           value: process.env.PREVIEWENV_AUTH0_STAFF_LOGIN_CLIENT_ID
