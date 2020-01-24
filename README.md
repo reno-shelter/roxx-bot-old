@@ -1,82 +1,59 @@
-## roxx-bot
+# ROXX-bot
 
-![](https://github.com/clareliguori/roxx-bot/raw/master/assets/robot.png)
+ROXX-botはbackcheckのプレビュー環境を構築するbotです。
 
-The roxx-bot application polls for GitHub notifications like @roxx-bot mentions and performs actions.  For example, whitelisted GitHub users (namely, @clareliguori) can mention @roxx-bot with a command "preview this" in a pull request to provision a preview environment.  See [this pull request](https://github.com/clareliguori/trivia-api/pull/3) for an example interaction, and see [this presentation](https://youtu.be/HCCkVz25UU4) for a demo.
+## 使い方
+### 概要
+だいたいの概要を掴んでもらうための説明です。(**※正常に動作させるにはオプションが必要です**)  
+実際に使用する際はユースケースを参照してください。
 
-Built with GitHub APIs, AWS Fargate, AWS CodeBuild, Amazon ECR, and AWS CloudFormation
+1. GitHub上でプルリクエストを作成します。
+1. プルリクエスト上で「`@roxx-bot preview this`」とコメントします。
+1. roxx-botさんがちょこちょことコメントを残していきます。(最長で30秒ほどかかります)
+1. しばらく経つとそのプルリクエスト(=base branch)のコードが反映された環境が立ち上がり、URLが表示されます。(だいたい2分ほどかかります)
 
-### How does roxx-bot work?
+    ![](./docs/assets/success_comment.png)
 
-The roxx-bot container constantly polls the [GitHub Notifications APIs](https://developer.github.com/v3/activity/notifications/) for any mentions of the @roxx-bot username on GitHub pull requests.  If the mentioner is whitelisted, roxx-bot attempts to set up a preview environment in the same AWS account.  The roxx-bot provisioning behavior is hard-coded to look for a buildspec.yml file in order to complete a CodeBuild build, and then to look for a template.yml file in the build artifact to use as a CloudFormation template for the preview environment.
+1. backcheckの環境は1リポジトリでは完結しないので、もう一方の環境を立ち上げます。
 
-### Set up your own bot
+    つまり、backcheck_apiのプルリクエストであればfrontを、backcheck_frontのプルリクエストであればapiのプレビュー環境を立ち上げます。
 
-Create a GitHub user for your bot, like @roxx-bot.
+    1. 「`@roxx-bot preview front`」または「`@roxx-bot preview front`」とコメントします。
 
-Update the user's [notification settings](https://github.com/settings/notifications) to select all "Web" notifications instead of "Email", and to "Automatically watch repositories".
+1. しばらく経つとそのプルリクエスト(=base branch)のコードが反映された環境が立ち上がり、URLが表示されます。(だいたい2分ほどかかります)
 
-Invite the bot as a collaborator of your GitHub Repository.
+    ![](./docs/assets/success_comment.png)
 
-Create a [personal access token](https://github.com/settings/tokens) for the bot user with the following scopes:
+1. URLのリンクを踏むとプレビュー環境を見ることができます。
 
-* `repo` (Full control of private repositories)
-* `notifications` (Access notifications)
+### ユースケース
+事前に自分のプルリクエストのIDを確認します。
 
-Store the token in AWS Systems Manager Parameter Store:
+例えば https://github.com/reno-shelter/backcheck_api/pull/1530 だったら `1530` がIDです。
 
-```aws ssm put-parameter --region us-west-2 --name your-bot-name-github-token --type SecureString --value <personal access token>```
+#### APIのみのプレビュー環境
+1. `@roxx-bot preview this FRONT_URL=https://reno-shelter-backcheck-api-pr-${ID}-backcheck-front.preview.backcheck.jp`
+1. `@roxx-bot preview front API_URL=https://reno-shelter-backcheck-api-pr-${ID}.preview.backcheck.jp`
 
-Grab the default VPC ID and default VPC subnets:
+#### FRONTのみのプレビュー環境
+1. `@roxx-bot preview this API_URL=https://reno-shelter-backcheck-front-pr-${ID}-backcheck-api.preview.backcheck.jp`
+1. `@roxx-bot preview api FRONT_URL=https://reno-shelter-backcheck-front-pr-${ID}.preview.backcheck.jp`
 
-```
-VPC_ID=`aws ec2 describe-vpcs --region us-west-2 --filters "Name=isDefault, Values=true" --query 'Vpcs[].VpcId' --output text`
+#### APIとFRONTの複合プレビュー環境
+1. API側のプルリクエストで以下をコメントし、
 
-SUBNET_IDS=`aws ec2 describe-subnets --region us-west-2 --filters "Name=vpc-id,Values=$VPC_ID","Name=default-for-az,Values=true" --query 'Subnets[].SubnetId' --output text | tr "\\t" ","`
-```
+    `@roxx-bot preview this FRONT_URL=https://reno-shelter-backcheck-front-pr-${FRONT_ID}.preview.backcheck.jp`
 
-Provision the stack in CloudFormation with the bot disabled:
-```
-aws cloudformation deploy --region us-west-2 \
-    --stack-name your-bot-name \
-    --template-file template.yml \
-    --capabilities CAPABILITY_NAMED_IAM \
-    --parameter-overrides \
-        Vpc=$VPC_ID \
-        Subnets=$SUBNET_IDS \
-        BotUser=<bot's GitHub username> \
-        WhitelistedUsers=<your GitHub username> \
-        GitHubTokenParameter=your-bot-name-github-token \
-        BotEnabled=No
-```
+1. FRONT側のプルリクエストで以下をコメントする
 
-Build and push the Docker image:
+    `@roxx-bot preview this API_URL=https://reno-shelter-backcheck-api-pr-${API_ID}.preview.backcheck.jp`
 
-```
-ECR_REPO=`aws ecr describe-repositories --region us-west-2 --repository-names your-bot-name --output text --query 'repositories[0].repositoryUri'`
-echo $ECR_REPO
+## FAQ
+### adminは？
+未対応です。
 
-$(aws ecr get-login --no-include-email --region us-west-2)
+### プレビュー環境の効期限は？
+プルリクエストのステータスが `Closed` または `Merged` になると破棄されます。
 
-docker build -t your-bot-name .
-
-docker tag your-bot-name $ECR_REPO
-
-docker push $ECR_REPO
-```
-
-Enable the bot:
-```
-aws cloudformation deploy --region us-west-2 \
-    --stack-name your-bot-name \
-    --template-file template.yml \
-    --capabilities CAPABILITY_NAMED_IAM \
-    --parameter-overrides BotEnabled=Yes
-```
-
-### Test Locally
-
-```
-GITHUB_TOKEN=`aws ssm get-parameter --name your-bot-name-github-token --with-decryption --query 'Parameter.Value' --output text`
-docker run --rm -v $HOME/.aws:/root/.aws:ro -e AWS_REGION=us-west-2 -e githubToken=$GITHUB_TOKEN your-bot-name
-```
+## 開発者用ガイド
+[こちら](docs/README_dev.md)を参照してください。
