@@ -1,9 +1,22 @@
 #!/usr/bin/env bash
 
 # docker apply
-docker-compose build
-docker tag roxx-bot_bot:latest 160922217136.dkr.ecr.ap-northeast-1.amazonaws.com/roxx-bot:latest
-docker push 160922217136.dkr.ecr.ap-northeast-1.amazonaws.com/roxx-bot:latest
+ECR_REPO=$(aws ecr describe-repositories \
+    --profile saml \
+    --region ap-northeast-1 \
+    --repository-names roxx-bot \
+    --output text \
+    --query 'repositories[0].repositoryUri')
+echo $ECR_REPO
+
+$(aws ecr get-login \
+    --profile saml \
+    --no-include-email \
+    --region ap-northeast-1)
+
+docker build -t roxx-bot .
+docker tag roxx-bot $ECR_REPO
+docker push $ECR_REPO
 
 # delete tasks
 tasks=$(aws ecs list-tasks \
