@@ -42,17 +42,8 @@ sh deploy_cloudformation.sh
 
 Build and push the Docker image:
 
-```
-ECR_REPO=`aws ecr describe-repositories --region us-west-2 --repository-names your-bot-name --output text --query 'repositories[0].repositoryUri'`
-echo $ECR_REPO
-
-$(aws ecr get-login --no-include-email --region us-west-2)
-
-docker build -t your-bot-name .
-
-docker tag your-bot-name $ECR_REPO
-
-docker push $ECR_REPO
+```sh
+sh renew_image.sh
 ```
 
 Enable the bot:
