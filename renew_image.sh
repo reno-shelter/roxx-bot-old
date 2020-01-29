@@ -26,9 +26,11 @@ tasks=$(aws ecs list-tasks \
     --query "taskArns[]" \
     --output text)
 
-for task in tasks
+for task in $tasks
 do
     aws ecs stop-task \
+        --cluster roxx-bot \
+        --region ap-northeast-1 \
         --profile saml \
         --task $task
 done

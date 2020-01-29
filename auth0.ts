@@ -30,10 +30,22 @@ export class Auth0Manager {
         const client = await this.auth0.getClient({client_id: this.targetClientId});
 
         const updateClient: Client = {
-            allowed_logout_urls: addKeyFromArray(client.allowed_logout_urls, `${baseURL}/company/signin`),
-            callbacks: addKeyFromArray(client.callbacks, `${baseURL}/company/dashboard`),
-            web_origins: addKeyFromArray(client.web_origins, baseURL),
-            allowed_origins: addKeyFromArray(client.allowed_origins, baseURL)
+          allowed_logout_urls: [
+            `${baseURL}/company/signin`,
+            `${baseURL}/company/error`
+          ].reduce(
+            (prev, current) => addKeyFromArray(prev, current),
+            client.allowed_logout_urls
+          ),
+          callbacks: [
+            `${baseURL}/company/dashboard`,
+            `${baseURL}/company/auth_callback`
+          ].reduce(
+            (prev, current) => addKeyFromArray(prev, current),
+            client.callbacks
+          ),
+          web_origins: addKeyFromArray(client.web_origins, baseURL),
+          allowed_origins: addKeyFromArray(client.allowed_origins, baseURL)
         };
         await this.auth0.updateClient({client_id: this.targetClientId}, updateClient)
     }
@@ -43,12 +55,22 @@ export class Auth0Manager {
         const client: Client = await this.auth0.getClient({client_id: this.targetClientId});
 
         const updateClient: Client = {
-            allowed_logout_urls: removeKeyFromArray(client.allowed_logout_urls,
-                `${baseURL}/company/signin`),
-            callbacks: removeKeyFromArray(client.callbacks,
-                `${baseURL}/company/dashboard`),
-            web_origins: removeKeyFromArray(client.web_origins, baseURL),
-            allowed_origins: removeKeyFromArray(client.allowed_origins, baseURL)
+          allowed_logout_urls: [
+            `${baseURL}/company/signin`,
+            `${baseURL}/company/error`
+          ].reduce(
+            (prev, current) => removeKeyFromArray(prev, current),
+            client.allowed_logout_urls
+          ),
+          callbacks: [
+            `${baseURL}/company/dashboard`,
+            `${baseURL}/company/auth_callback`
+          ].reduce(
+            (prev, current) => removeKeyFromArray(prev, current),
+            client.callbacks
+          ),
+          web_origins: removeKeyFromArray(client.web_origins, baseURL),
+          allowed_origins: removeKeyFromArray(client.allowed_origins, baseURL)
         };
         await this.auth0.updateClient({client_id: this.targetClientId}, updateClient)
     }
