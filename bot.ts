@@ -52,28 +52,32 @@ const ecrRepository = process.env.ecrRepository || "roxx-bot-preview-images";
 
 const triggerCommand = "preview this";
 
-interface repoConfig {
+type repoConfig = {
   [key: string]: {
     owner: string;
     repo: string;
+    envURLName: string;
     baseBranch: string;
   };
-}
+};
 
 const otherRepoConfig: repoConfig = {
   api: {
     owner: "reno-shelter",
     repo: "backcheck_api",
+    envURLName: "API_URL",
     baseBranch: "dev"
   },
   front: {
     owner: "reno-shelter",
     repo: "backcheck_front",
+    envURLName: "FRONT_URL",
     baseBranch: "dev"
   },
   admin: {
     owner: "reno-shelter",
     repo: "backcheck_admin",
+    envURLName: "ADMIN_URL",
     baseBranch: "dev"
   }
 };
@@ -651,7 +655,15 @@ async function handleNotification(
     const command = commentBody.replace("@" + botUser, "").trim();
     if (command.includes(triggerCommand)) {
       console.log("Provisioning preview stack");
-      const envs = parseEnv(command, triggerCommand);
+
+      // env
+      let envs = [
+        ...parseUrl(command, owner, repo, prNumber),
+        ...parseEnv(command, triggerCommand)
+      ];
+      // 重複削除
+      envs = Array.from(new Map(envs.map(e => [e.name, e]))).map(([_, val])=> val)
+
       await provisionPreviewStack({
         owner,
         repo,
@@ -663,12 +675,21 @@ async function handleNotification(
     } else if (command.startsWith("preview")) {
       // それ以外の環境
       const target = command.replace(/preview (front|api).*/, "$1");
-      const envs = parseEnv(command, `preview ${target}`);
+
       if (otherRepoConfig[target] == undefined) {
         console.log(`command cannot deploy [${target}]`);
         return;
       }
       const targetConfig = otherRepoConfig[target];
+
+      // env
+      let envs = [
+        ...parseUrl(command, owner, repo, prNumber),
+        ...parseEnv(command, `preview ${target}`)
+      ];
+      // 重複削除
+      envs = Array.from(new Map(envs.map(e => [e.name, e]))).map(([_, val])=> val)
+
       await provisionPreviewStack({
         owner,
         repo,
@@ -712,6 +733,46 @@ function parseEnv(command: string, trigger: string): EnvironmentVariable[] {
           }
       )
   );
+}
+
+function parseUrl(
+  command: string,
+  baseOwner: string,
+  baseRepo: string,
+  basePrNumber: number,
+): EnvironmentVariable[] {
+  const found = command
+    .trim()
+    .replace(/ +/, " ") //空白を除去
+    .match(
+      /https:\/\/github.com\/(?<owner>[\w\d_-]+)\/(?<repo>[\w\d_-]+)\/pull\/(?<prNumber>[\d]+)/
+    );
+
+  if (found) {
+    // 対象のURLがある場合
+    const { owner, repo, prNumber } = found.groups;
+    const uniqueId = buildUniqueId(owner, repo, +prNumber);
+    const targetRepo = Object.entries(otherRepoConfig).find(
+      ([_, config]) => config.repo == repo
+    );
+    if (!targetRepo) return [];
+    return [
+      {
+        name: envPrefix + targetRepo[1].envURLName,
+        value: `https://${uniqueId}.preview.backcheck.jp`
+      }
+    ];
+  } else {
+    // 対象のURLがない=自動補完が必要
+    return Object.entries(otherRepoConfig)
+    .map(([key, config]) => {
+      const uniqueId = buildUniqueId(baseOwner, baseRepo, basePrNumber, baseRepo !== config.repo ? config.repo : undefined)
+      return {
+        name: envPrefix + otherRepoConfig[key].envURLName,
+        value: `https://${uniqueId}.preview.backcheck.jp`
+      }
+    })
+  }
 }
 
 /**
@@ -761,7 +822,7 @@ retrieveNotifications().then(success => {
   if (success) {
     // poll every 30 seconds
     console.log("Scheduling jobs");
-    const job = new CronJob("*/30 * * * * *", retrieveNotifications);
+    const job = new CronJob("*/10 * * * * *", retrieveNotifications);
 
     process.on("SIGTERM", () => {
       console.info("SIGTERM signal received.");
