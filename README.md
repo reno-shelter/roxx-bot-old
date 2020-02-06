@@ -27,26 +27,24 @@ ROXX-botはbackcheckのプレビュー環境を構築するbotです。
 1. URLのリンクを踏むとプレビュー環境を見ることができます。
 
 ### ユースケース
-事前に自分のプルリクエストのIDを確認します。
-
-例えば https://github.com/reno-shelter/backcheck_api/pull/1530 だったら `1530` がIDです。
 
 #### APIのみのプレビュー環境
-1. `@roxx-bot preview this FRONT_URL=https://reno-shelter-backcheck-api-pr-${ID}-backcheck-front.preview.backcheck.jp`
-1. `@roxx-bot preview front API_URL=https://reno-shelter-backcheck-api-pr-${ID}.preview.backcheck.jp`
+1. `@roxx-bot preview this`
+1. `@roxx-bot preview front`
 
 #### FRONTのみのプレビュー環境
-1. `@roxx-bot preview this API_URL=https://reno-shelter-backcheck-front-pr-${ID}-backcheck-api.preview.backcheck.jp`
-1. `@roxx-bot preview api FRONT_URL=https://reno-shelter-backcheck-front-pr-${ID}.preview.backcheck.jp`
+1. `@roxx-bot preview this`
+1. `@roxx-bot preview api`
 
 #### APIとFRONTの複合プレビュー環境
-1. API側のプルリクエストで以下をコメントし、
+1. APIとFRONTでそれぞれプルリクエストを作成する
+1. API側のプルリクエストでFRONTのURLをつけた状態でコメントする
 
-    `@roxx-bot preview this FRONT_URL=https://reno-shelter-backcheck-front-pr-${FRONT_ID}.preview.backcheck.jp`
+    `@roxx-bot preview this https://github.com/reno-shelter/backcheck_front/pull/XXXX`
 
-1. FRONT側のプルリクエストで以下をコメントする
+1. FRONT側のプルリクエストでAPIのURLをつけた状態でコメントする
 
-    `@roxx-bot preview this API_URL=https://reno-shelter-backcheck-api-pr-${API_ID}.preview.backcheck.jp`
+    `@roxx-bot preview this https://github.com/reno-shelter/backcheck_api/pull/XXXX`
 
 ## FAQ
 ### adminは？
