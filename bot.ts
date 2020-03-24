@@ -122,6 +122,7 @@ async function attachActivationEnv(
   envs: EnvironmentVariable[]
 ) {
   const activationExpiredAt = new Date();
+  const activationIdParamName = generateActivationParamName(uniqueId);
   activationExpiredAt.setDate(activationExpiredAt.getDate() + activationPeriod);
 
   const activationResponse = await ssm
@@ -146,18 +147,18 @@ async function attachActivationEnv(
       .promise();
     await ssm
       .putParameter({
-        Name: generateActivationParamName(uniqueId),
+        Name: activationIdParamName,
         Value: activation.ActivationCode,
         Type: "SecureString"
       })
       .promise();
     envs = envs.concat([
       {
-        name: "SSM_ACTIVATION_CODE",
+        name: envPrefix + "SSM_ACTIVATION_CODE",
         value: activation.ActivationCode
       },
       {
-        name: "SSM_ACTIVATION_ID",
+        name: envPrefix + "SSM_ACTIVATION_ID",
         value: activation.ActivationId
       }
     ]);
@@ -165,17 +166,17 @@ async function attachActivationEnv(
   } else {
     const activationCodeResponse = await ssm
       .getParameter({
-        Name: generateActivationParamName(uniqueId),
+        Name: activationIdParamName,
         WithDecryption: true
       })
       .promise();
     envs = envs.concat([
       {
-        name: "SSM_ACTIVATION_CODE",
+        name: envPrefix + "SSM_ACTIVATION_CODE",
         value: activationCodeResponse.Parameter.Value
       },
       {
-        name: "SSM_ACTIVATION_ID",
+        name: envPrefix + "SSM_ACTIVATION_ID",
         value: activationResponse.ActivationList[0].ActivationId
       }
     ]);
