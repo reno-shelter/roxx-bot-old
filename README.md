@@ -31,10 +31,17 @@ ROXX-botはbackcheckのプレビュー環境を構築するbotです。
 #### APIのみのプレビュー環境
 1. `@roxx-bot preview this`
 1. `@roxx-bot preview front`
+1. `@roxx-bot preview admin`
 
 #### FRONTのみのプレビュー環境
 1. `@roxx-bot preview this`
 1. `@roxx-bot preview api`
+1. `@roxx-bot preview admin`
+
+#### ADMINのみのプレビュー環境
+1. `@roxx-bot preview this`
+1. `@roxx-bot preview api`
+1. `@roxx-bot preview front`
 
 #### APIとFRONTの複合プレビュー環境
 1. APIとFRONTでそれぞれプルリクエストを作成する
@@ -46,9 +53,14 @@ ROXX-botはbackcheckのプレビュー環境を構築するbotです。
 
     `@roxx-bot preview this https://github.com/reno-shelter/backcheck_api/pull/XXXX`
 
+1. ADMIN側のプルリクエストでAPIのURLをつけた状態でコメントする
+
+    `@roxx-bot preview this https://github.com/reno-shelter/backcheck_api/pull/XXXX`
+
 ## FAQ
-### adminは？
-未対応です。
+### メールの確認は？
+プレビュー環境下で送信されたメールは、ステージングの MailCatcher にて捕捉されます。  
+http://mailcatcher.stg.backcheck.jp:1080/
 
 ### プレビュー環境の効期限は？
 プルリクエストのステータスが `Closed` または `Merged` になると破棄されます。
